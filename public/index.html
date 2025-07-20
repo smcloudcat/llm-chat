@@ -397,34 +397,59 @@
 
       @media (max-width: 768px) {
         .app-container {
-          flex-direction: column;
+          position: relative;
           height: calc(100vh - 180px);
         }
         
         .sidebar {
-          width: 100%;
-          height: 200px;
-          margin-bottom: 0.5rem;
-          border-radius: var(--radius-md);
+          position: absolute;
+          left: 0;
+          top: 0;
+          bottom: 0;
+          width: 280px;
+          z-index: 100;
+          transform: translateX(-100%);
+          transition: transform 0.3s ease;
+          margin-bottom: 0;
+          border-radius: 0;
         }
         
-        .history-list {
-          max-height: 150px;
-          overflow-y: auto;
+        .sidebar.collapsed {
+          width: 60px;
+          transform: translateX(0);
+        }
+        
+        .sidebar:not(.collapsed) {
+          transform: translateX(0);
+          box-shadow: 2px 0 10px rgba(0,0,0,0.1);
         }
         
         .chat-container {
           margin-left: 0;
-          flex: 1;
-          min-height: 300px;
+          width: 100%;
+          transition: margin-left 0.3s ease;
         }
         
-        .chat-messages {
-          padding: 1rem;
+        .sidebar:not(.collapsed) + .chat-container {
+          margin-left: 280px;
+          width: calc(100% - 280px);
         }
         
-        header {
-          margin-bottom: 0.5rem;
+        .toggle-btn {
+          position: fixed;
+          left: 10px;
+          top: 80px;
+          z-index: 101;
+          background: white;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .sidebar.collapsed .toggle-btn {
+          left: 10px;
+        }
+        
+        .sidebar:not(.collapsed) .toggle-btn {
+          left: 290px;
         }
       }
     </style>
