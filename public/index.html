@@ -181,11 +181,34 @@
       }
       
       pre {
+        position: relative;
         background-color: rgba(0, 0, 0, 0.05);
         border-radius: var(--radius-sm);
         padding: 0.75rem;
         overflow-x: auto;
         margin: 0.5rem 0;
+      }
+      
+      .copy-btn {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        background: rgba(0, 0, 0, 0.1);
+        border: none;
+        border-radius: var(--radius-sm);
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+      
+      pre:hover .copy-btn {
+        opacity: 1;
+      }
+      
+      .copy-btn:hover {
+        background: rgba(0, 0, 0, 0.2);
       }
       
       code {

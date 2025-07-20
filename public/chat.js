@@ -231,9 +231,28 @@ function addMessageToChat(role, content) {
   messageEl.appendChild(contentEl);
   chatMessages.appendChild(messageEl);
 
-  // Highlight code blocks
-  contentEl.querySelectorAll('pre code').forEach((block) => {
-    hljs.highlightElement(block);
+  // Highlight code blocks and add copy buttons
+  contentEl.querySelectorAll('pre').forEach((pre) => {
+    const code = pre.querySelector('code');
+    hljs.highlightElement(code);
+    
+    // Add copy button
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'copy-btn';
+    copyBtn.textContent = '复制';
+    copyBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(code.textContent)
+        .then(() => {
+          copyBtn.textContent = '已复制!';
+          setTimeout(() => {
+            copyBtn.textContent = '复制';
+          }, 2000);
+        })
+        .catch(err => {
+          console.error('复制失败:', err);
+        });
+    });
+    pre.appendChild(copyBtn);
   });
 
   // Scroll to bottom
