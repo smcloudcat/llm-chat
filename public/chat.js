@@ -12,6 +12,7 @@ const typingIndicator = document.getElementById("typing-indicator");
 const sidebar = document.getElementById("sidebar");
 const toggleBtn = document.getElementById("toggle-btn");
 const historyList = document.getElementById("history-list");
+const overlay = document.getElementById("overlay");
 
 // Chat state
 let chatHistory = [
@@ -157,25 +158,30 @@ async function sendMessage() {
 }
 
 // Toggle sidebar
-// Toggle sidebar
 toggleBtn.addEventListener('click', () => {
   sidebar.classList.toggle('collapsed');
-  document.body.classList.toggle('no-scroll'); // 禁止滚动
-  const overlay = document.querySelector('.overlay');
-  if (overlay) {
-    overlay.style.display = sidebar.classList.contains('collapsed') ? 'none' : 'block';
-  }
+  updateOverlay();
 });
 
-// Close sidebar on overlay click
-document.body.addEventListener('click', (e) => {
-  const overlay = document.querySelector('.overlay');
-  if (e.target === overlay && !sidebar.classList.contains('collapsed')) {
-    sidebar.classList.add('collapsed');
-    overlay.style.display = 'none';
-    document.body.classList.remove('no-scroll');
-  }
+// Close sidebar when overlay is clicked
+overlay.addEventListener('click', () => {
+  sidebar.classList.add('collapsed');
+  updateOverlay();
 });
+
+// Update overlay visibility based on sidebar state
+function updateOverlay() {
+  if (window.innerWidth <= 768) {
+    if (sidebar.classList.contains('collapsed')) {
+      overlay.style.display = 'none';
+    } else {
+      overlay.style.display = 'block';
+    }
+  }
+}
+
+// Update overlay on window resize
+window.addEventListener('resize', updateOverlay);
 
 // Save chat to localStorage
 function saveChat() {
@@ -270,6 +276,7 @@ function updateHistoryList() {
 
 // Initialize
 updateHistoryList();
+updateOverlay(); // Ensure initial overlay state is correct
 
 /**
  * Helper function to add message to chat
