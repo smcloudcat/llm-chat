@@ -157,8 +157,24 @@ async function sendMessage() {
 }
 
 // Toggle sidebar
+// Toggle sidebar
 toggleBtn.addEventListener('click', () => {
   sidebar.classList.toggle('collapsed');
+  document.body.classList.toggle('no-scroll'); // 禁止滚动
+  const overlay = document.querySelector('.overlay');
+  if (overlay) {
+    overlay.style.display = sidebar.classList.contains('collapsed') ? 'none' : 'block';
+  }
+});
+
+// Close sidebar on overlay click
+document.body.addEventListener('click', (e) => {
+  const overlay = document.querySelector('.overlay');
+  if (e.target === overlay && !sidebar.classList.contains('collapsed')) {
+    sidebar.classList.add('collapsed');
+    overlay.style.display = 'none';
+    document.body.classList.remove('no-scroll');
+  }
 });
 
 // Save chat to localStorage
