@@ -209,24 +209,25 @@ function addMessageToChat(role, content) {
   const messageEl = document.createElement("div");
   messageEl.className = `message ${role}-message`;
   
-  // Create avatar
-  const avatar = document.createElement("div");
-  avatar.className = `avatar ${role}-avatar`;
-  avatar.textContent = role === 'user' ? 'U' : 'A';
-  
   // Create message content container
   const contentEl = document.createElement("div");
   contentEl.className = 'message-content';
   
-  // Format content: replace code blocks with <pre><code>
+  // Format content: replace code blocks with <pre><code> and language class
   let formattedContent = content;
-  formattedContent = formattedContent.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+  // Handle multi-line code blocks with optional language identifier
+  formattedContent = formattedContent.replace(/```(\w*)\n([\s\S]*?)```/g, function(match, lang, code) {
+    if (lang) {
+      return `<pre><code class="language-${lang}">${code}</code></pre>`;
+    }
+    return `<pre><code>${code}</code></pre>`;
+  });
+  // Handle single-line code blocks
   formattedContent = formattedContent.replace(/`([^`]+)`/g, '<code>$1</code>');
   
   contentEl.innerHTML = `<p>${formattedContent}</p>`;
   
-  // Append avatar and content
-  messageEl.appendChild(avatar);
+  // Append content
   messageEl.appendChild(contentEl);
   chatMessages.appendChild(messageEl);
 
