@@ -11,13 +11,50 @@ const sendButton = document.getElementById("send-button");
 const typingIndicator = document.getElementById("typing-indicator");
 
 // Chat state
-let chatHistory = [
+let chatHistory = JSON.parse(localStorage.getItem("chatHistory")) || [
   {
     role: "assistant",
     content:
       "Hello! I'm an LLM chat app powered by Cloudflare Workers AI. How can I help you today?",
   },
 ];
+
+window.addEventListener("load", () => {
+  chatHistory.forEach(({ role, content }) => addMessageToChat(role, content));
+});
+
+function saveChatHistory() {
+  localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
+  updateChatSessions();
+}
+
+// Generate chat session links
+function updateChatSessions() {
+  const chatSessionsContainer = document.getElementById("chat-sessions");
+  chatSessionsContainer.innerHTML = ""; // Clear previous sessions
+  const sessions = JSON.parse(localStorage.getItem("chatHistory")) || [];
+  sessions.forEach((session, index) => {
+    const sessionButton = document.createElement("button");
+    sessionButton.textContent = `Session ${index + 1}`;
+    sessionButton.style =
+      "display: block; width: 100%; margin-bottom: 1rem; padding: 0.5rem; text-align: left; background-color: var(--light-bg); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer;";
+    sessionButton.onclick = () => loadChatSession(index);
+    chatSessionsContainer.appendChild(sessionButton);
+  });
+}
+
+// Load chat session by index
+function loadChatSession(index) {
+  const sessions = JSON.parse(localStorage.getItem("chatHistory")) || [];
+  if (sessions[index]) {
+    chatHistory = sessions[index];
+    const chatMessagesContainer = document.getElementById("chat-messages");
+    chatMessagesContainer.innerHTML = ""; // Clear current chat
+    chatHistory.forEach(({ role, content }) =>
+      addMessageToChat(role, content),
+    );
+  }
+}
 let isProcessing = false;
 
 // Auto-resize textarea as user types
@@ -126,6 +163,7 @@ async function sendMessage() {
 
     // Add completed response to chat history
     chatHistory.push({ role: "assistant", content: responseText });
+    saveChatHistory();
   } catch (error) {
     console.error("Error:", error);
     addMessageToChat(
@@ -141,6 +179,7 @@ async function sendMessage() {
     userInput.disabled = false;
     sendButton.disabled = false;
     userInput.focus();
+    saveChatHistory();
   }
 }
 
