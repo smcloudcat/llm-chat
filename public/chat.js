@@ -208,8 +208,32 @@ updateHistoryList();
 function addMessageToChat(role, content) {
   const messageEl = document.createElement("div");
   messageEl.className = `message ${role}-message`;
-  messageEl.innerHTML = `<p>${content}</p>`;
+  
+  // Create avatar
+  const avatar = document.createElement("div");
+  avatar.className = `avatar ${role}-avatar`;
+  avatar.textContent = role === 'user' ? 'U' : 'A';
+  
+  // Create message content container
+  const contentEl = document.createElement("div");
+  contentEl.className = 'message-content';
+  
+  // Format content: replace code blocks with <pre><code>
+  let formattedContent = content;
+  formattedContent = formattedContent.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+  formattedContent = formattedContent.replace(/`([^`]+)`/g, '<code>$1</code>');
+  
+  contentEl.innerHTML = `<p>${formattedContent}</p>`;
+  
+  // Append avatar and content
+  messageEl.appendChild(avatar);
+  messageEl.appendChild(contentEl);
   chatMessages.appendChild(messageEl);
+
+  // Highlight code blocks
+  contentEl.querySelectorAll('pre code').forEach((block) => {
+    hljs.highlightElement(block);
+  });
 
   // Scroll to bottom
   chatMessages.scrollTop = chatMessages.scrollHeight;
