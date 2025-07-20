@@ -187,13 +187,66 @@ function loadChat(chatId) {
   }
 }
 
+// Create confirmation modal
+const modal = document.createElement('div');
+modal.className = 'modal';
+modal.innerHTML = `
+  <div class="modal-content">
+    <p>确定要删除这条聊天记录吗？</p>
+    <div class="modal-actions">
+      <button class="modal-btn modal-btn-cancel">取消</button>
+      <button class="modal-btn modal-btn-confirm">删除</button>
+    </div>
+  </div>
+`;
+document.body.appendChild(modal);
+
+// Delete chat from history
+function deleteChat(chatId) {
+  delete chats[chatId];
+  localStorage.setItem('chats', JSON.stringify(chats));
+  updateHistoryList();
+}
+
 // Update history list
 function updateHistoryList() {
   historyList.innerHTML = '';
   Object.values(chats).forEach(chat => {
     const item = document.createElement('div');
     item.className = 'history-item';
-    item.textContent = chat.title;
+    
+    const title = document.createElement('span');
+    title.textContent = chat.title;
+    title.style.flex = '1';
+    title.style.overflow = 'hidden';
+    title.style.textOverflow = 'ellipsis';
+    
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'delete-btn';
+    deleteBtn.innerHTML = '&times;';
+    deleteBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      modal.classList.add('active');
+      
+      const confirmBtn = modal.querySelector('.modal-btn-confirm');
+      const cancelBtn = modal.querySelector('.modal-btn-cancel');
+      
+      const closeModal = () => {
+        modal.classList.remove('active');
+        confirmBtn.onclick = null;
+        cancelBtn.onclick = null;
+      };
+      
+      confirmBtn.onclick = () => {
+        deleteChat(chat.id);
+        closeModal();
+      };
+      
+      cancelBtn.onclick = closeModal;
+    });
+    
+    item.appendChild(title);
+    item.appendChild(deleteBtn);
     item.addEventListener('click', () => loadChat(chat.id));
     historyList.appendChild(item);
   });
