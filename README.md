@@ -1,3 +1,7 @@
+# About beautification
+
+I have only made a deep beautification of the LLM Chat Application Template, if you want to carry out secondary development, please be sure to retain the copyright of the original author
+
 # LLM Chat Application Template
 
 A simple, ready-to-deploy chat application template powered by Cloudflare Workers AI. This template provides a clean starting point for building AI chat applications with streaming responses.

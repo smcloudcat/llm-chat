@@ -398,16 +398,33 @@
       @media (max-width: 768px) {
         .app-container {
           flex-direction: column;
-          height: auto;
+          height: calc(100vh - 180px);
         }
         
         .sidebar {
           width: 100%;
-          margin-bottom: 1rem;
+          height: 200px;
+          margin-bottom: 0.5rem;
+          border-radius: var(--radius-md);
+        }
+        
+        .history-list {
+          max-height: 150px;
+          overflow-y: auto;
         }
         
         .chat-container {
           margin-left: 0;
+          flex: 1;
+          min-height: 300px;
+        }
+        
+        .chat-messages {
+          padding: 1rem;
+        }
+        
+        header {
+          margin-bottom: 0.5rem;
         }
       }
     </style>
