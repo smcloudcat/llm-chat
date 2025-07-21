@@ -1,446 +1,816 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LLM Chat App</title>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Chat | 智能对话助手</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code&display=swap" rel="stylesheet">
     <style>
-      :root {
-        --primary-color: #6366f1;
-        --primary-hover: #4f46e5;
-        --bg-color: #f8fafc;
-        --text-color: #1e293b;
-        --text-light: #64748b;
-        --card-bg: rgba(255, 255, 255, 0.9);
-        --sidebar-bg: rgba(255, 255, 255, 0.8);
-        --user-msg-bg: #e0e7ff;
-        --assistant-msg-bg: #f1f5f9;
---sidebar-width: 240px;
-        --sidebar-collapsed-width: 0px; /* Collapsed width is 0 */
-        --transition-speed: 0.3s;
-        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        --radius-sm: 0.5rem;
-        --radius-md: 0.75rem;
-        --radius-lg: 1rem;
-      }
+        :root {
+            --primary-color: #6366f1;
+            --primary-hover: #4f46e5;
+            --gradient-start: #8b5cf6;
+            --gradient-end: #6366f1;
+            --bg-color: #f0f4f8;
+            --bg-gradient: linear-gradient(135deg, #e0e7ff 0%, #f0f4f8 100%);
+            --text-color: #1e293b;
+            --text-light: #64748b;
+            --card-bg: rgba(255, 255, 255, 0.92);
+            --sidebar-bg: rgba(255, 255, 255, 0.88);
+            --user-msg-bg: linear-gradient(135deg, #e0e7ff, #d4d8ff);
+            --assistant-msg-bg: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+            --sidebar-width: 280px;
+            --sidebar-collapsed-width: 0;
+            --transition-speed: 0.3s;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
+            --radius-sm: 12px;
+            --radius-md: 16px;
+            --radius-lg: 20px;
+            --avatar-size: 36px;
+        }
 
-      * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-      }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-      body {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        line-height: 1.5;
-        color: var(--text-color);
-        background-color: var(--bg-color);
-        padding: 1rem;
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-      }
-
-      @supports (font-variation-settings: normal) {
-        body { font-family: 'Inter var', -apple-system, BlinkMacSystemFont, sans-serif; }
-      }
-
-      header {
-        text-align: center;
-        margin-bottom: 1.5rem;
-        padding: 0.75rem 0;
-        flex-shrink: 0;
-      }
-
-      h1 {
-        font-size: 1.65rem;
-        font-weight: 700;
-        background: linear-gradient(135deg, var(--primary-color), #8b5cf6);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin-bottom: 0.5rem;
-        text-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        letter-spacing: -0.5px;
-      }
-
-      header p {
-        color: var(--text-light);
-        font-size: 0.95rem;
-      }
-
-      .main-container {
-        display: flex;
-        flex-grow: 1;
-        height: 0; /* Fix for flex-grow in FF */
-        min-height: 500px; /* Minimum height for the chat area */
-        position: relative;
-        box-shadow: var(--shadow-lg);
-        border-radius: var(--radius-md);
-        background-color: var(--card-bg);
-        backdrop-filter: blur(10px);
-        overflow: hidden;
-      }
-
-      /* Sidebar styles */
-      .sidebar {
-        position: absolute;
-        top: 0;
-        left: 0;
-        bottom: 0;
-        width: var(--sidebar-width);
-        background-color: var(--sidebar-bg);
-        transition: transform var(--transition-speed) ease;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        border-right: 1px solid rgba(0,0,0,0.07);
-        z-index: 20;
-        transform: translateX(-100%);
-        box-shadow: 3px 0 10px rgba(0,0,0,0.1);
-      }
-
-      .sidebar:not(.collapsed) {
-        transform: translateX(0);
-      }
-      
-      .sidebar-content {
-        opacity: 1;
-        transition: opacity 0.2s;
-      }
-
-      .sidebar.collapsed .sidebar-content {
-        opacity: 0;
-        pointer-events: none;
-      }
-
-      .sidebar-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 1rem;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-        flex-shrink: 0;
-      }
-
-      .sidebar-header h3 {
-        align-items: center;
-        margin: 0;
-        font-size: 1rem;
-        font-weight: 500;
-        white-space: nowrap;
-      }
-
-      .toggle-btn {
-        background: none;
-        border: none;
-        font-size: 1.5rem;
-        cursor: pointer;
-        color: var(--text-color);
-        padding: 0.5rem;
-        border-radius: var(--radius-sm);
-        transition: all 0.2s;
-        position: absolute;
-        top: 0rem; /* 降低按钮位置 */
-        left: 1rem;
-        z-index: 100;
-        background-color: rgba(255,255,255,0.5);
-        backdrop-filter: blur(5px);
-        box-shadow: var(--shadow-sm);
-      }
-
-      .toggle-btn:hover {
-        background-color: rgba(0, 0, 0, 0.05);
-        transform: scale(1.1);
-      }
-      
-      .sidebar:not(.collapsed) .toggle-btn {
-        /* This rule is to hide the button when sidebar is open on desktop */
-        /* On mobile, it will be handled by JS */
-      }
-
-      .history-list {
-        flex: 1;
-        padding: 0.75rem;
-        overflow-y: auto;
-      }
-
-      .history-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0.75rem;
-        margin-bottom: 0.5rem;
-        border-radius: var(--radius-sm);
-        cursor: pointer;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        font-size: 0.9rem;
-        transition: all 0.2s;
-      }
-
-      .history-item:hover {
-        background-color: rgba(0, 0, 0, 0.05);
-      }
-
-      .delete-btn {
-        color: #ef4444;
-        background: none;
-        border: none;
-        cursor: pointer;
-        padding: 0.25rem;
-        border-radius: 50%;
-        transition: all 0.2s;
-        opacity: 0;
-      }
-
-      .history-item:hover .delete-btn {
-        opacity: 1;
-      }
-
-      .delete-btn:hover {
-        background-color: rgba(239, 68, 68, 0.1);
-      }
-
-      /* Chat container */
-      .chat-container {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-        transition: margin-left var(--transition-speed) ease;
-      }
-
-
-
-      .chat-messages {
-        flex: 1;
-        overflow-y: auto;
-        padding: 2rem;
-        margin-top: 1.8rem;
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-      }
-
-      .message {
-        padding: 0.5rem 1rem;
-        border-radius: var(--radius-md);
-        max-width: 85%;
-        box-shadow: var(--shadow-sm);
-        line-height: 1.6;
-      }
-      
-      pre {
-        position: relative;
-        background-color: rgba(0, 0, 0, 0.05);
-        border-radius: var(--radius-sm);
-        padding: 1rem;
-        padding-top: 2.5rem; /* Space for copy button */
-        overflow-x: auto;
-        margin: 0.75rem 0;
-      }
-      
-      .copy-btn {
-        position: absolute;
-        top: 0.5rem;
-        right: 0.5rem;
-        background: rgba(0, 0, 0, 0.4);
-        border: none;
-        color: white;
-        border-radius: var(--radius-sm);
-        padding: 0.25rem 0.5rem;
-        font-size: 0.75rem;
-        cursor: pointer;
-        opacity: 0;
-        transition: all 0.2s;
-      }
-      
-      pre:hover .copy-btn {
-        opacity: 1;
-      }
-      
-      .copy-btn:hover {
-        background: rgba(0, 0, 0, 0.6);
-      }
-      
-      code {
-        font-family: 'Fira Code', 'Courier New', monospace;
-        font-size: 0.9rem;
-      }
-
-      .user-message {
-        background-color: var(--user-msg-bg);
-        align-self: flex-end;
-        margin-left: auto;
-        border-bottom-right-radius: var(--radius-sm);
-      }
-
-      .assistant-message {
-        background-color: var(--assistant-msg-bg);
-        align-self: flex-start;
-        border-bottom-left-radius: var(--radius-sm);
-      }
-
-      .typing-indicator {
-        padding: 0 1.5rem 1rem;
-        font-style: italic;
-        color: var(--text-light);
-        font-size: 0.9rem;
-        flex-shrink: 0;
-        display: none;
-      }
-
-      .typing-indicator.visible {
-        display: block;
-      }
-
-      .message-input {
-        display: flex;
-        padding: 1rem;
-        background-color: rgba(255,255,255,0.7);
-        border-top: 1px solid rgba(0, 0, 0, 0.05);
-        flex-shrink: 0;
-      }
-
-      #user-input {
-        flex: 1;
-        padding: 0.75rem 1rem;
-        border: 1px solid rgba(0, 0, 0, 0.1);
-        border-radius: var(--radius-sm);
-        font-family: inherit;
-        resize: none;
-        min-height: 50px;
-        transition: border-color 0.2s;
-        background-color: white;
-      }
-
-      #user-input:focus {
-        outline: none;
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
-      }
-
-      #send-button {
-        margin-left: 0.75rem;
-        padding: 0 1.25rem;
-        background-color: var(--primary-color);
-        color: white;
-        border: none;
-        border-radius: var(--radius-sm);
-        cursor: pointer;
-        font-weight: 500;
-        transition: all 0.2s;
-      }
-
-      #send-button:hover {
-        background-color: var(--primary-hover);
-        transform: translateY(-1px);
-      }
-
-      #send-button:disabled {
-        background-color: var(--text-light);
-        cursor: not-allowed;
-        transform: none;
-      }
-
-      footer {
-        padding: 1rem;
-        text-align: center;
-        font-size: 0.85rem;
-        color: var(--text-light);
-        background-color: var(--bg-color);
-        border-top: 1px solid rgba(0, 0, 0, 0.05);
-        flex-shrink: 0;
-      }
-      
-      .overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-color: rgba(0,0,0,0.5);
-        z-index: 5;
-        display: none;
-        opacity: 0;
-        transition: opacity var(--transition-speed) ease;
-      }
-      
-      .overlay.active {
-        display: block;
-        opacity: 1;
-      }
-
-      /* Responsive adjustments */
-      @media (max-width: 768px) {
         body {
-          padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
         }
+
+        @supports (font-variation-settings: normal) {
+            body { font-family: 'Inter var', -apple-system, BlinkMacSystemFont, sans-serif; }
+        }
+
         header {
-          padding: 1rem;
-          margin-bottom: 0;
-          border-bottom: 1px solid rgba(0,0,0,0.07);
+            text-align: center;
+            margin-bottom: 1.5rem;
+            padding: 1rem 0;
+            flex-shrink: 0;
         }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary-color), var(--gradient-start));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.5px;
+        }
+
+        header p {
+            color: var(--text-light);
+            font-size: 1rem;
+            font-weight: 500;
+            max-width: 500px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
         .main-container {
-          border-radius: 0;
-          height: 100%;
+            display: flex;
+            flex-grow: 1;
+            height: 0;
+            min-height: 500px;
+            position: relative;
+            border-radius: var(--radius-lg);
+            background: var(--card-bg);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
         }
+
+        /* 侧边栏美化 */
+        .sidebar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: var(--sidebar-width);
+            background: var(--sidebar-bg);
+            transition: transform var(--transition-speed) ease;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            z-index: 20;
+            transform: translateX(-100%);
+            box-shadow: 5px 0 15px rgba(0, 0, 0, 0.05);
+            border-right: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
         .sidebar:not(.collapsed) {
-          box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            transform: translateX(0);
         }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 1.5rem 1rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            flex-shrink: 0;
+        }
+
+        .sidebar-header h3 {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .new-chat-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .new-chat-btn:hover {
+            background: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .history-list {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.9rem 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+            background: rgba(0, 0, 0, 0.02);
+            position: relative;
+        }
+
+        .history-item:hover {
+            background: rgba(99, 102, 241, 0.08);
+            color: var(--primary-color);
+        }
+
+        .history-item.active {
+            background: rgba(99, 102, 241, 0.12);
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        .history-item .icon {
+            margin-right: 0.75rem;
+            color: var(--text-light);
+        }
+
+        .delete-btn {
+            color: #ef4444;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 50%;
+            transition: all 0.2s;
+            opacity: 0;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .history-item:hover .delete-btn {
+            opacity: 1;
+        }
+
+        .delete-btn:hover {
+            background-color: rgba(239, 68, 68, 0.1);
+        }
+
+        /* 聊天容器美化 */
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: margin-left var(--transition-speed) ease;
+        }
+
+        .chat-header {
+            display: flex;
+            align-items: center;
+            padding: 1.25rem 2rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 10;
+        }
+
+        .chat-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
         .toggle-btn {
-          top: 0.75rem;
-          left: 0.75rem;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            padding: 0.6rem;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 42px;
+            height: 42px;
+            margin-right: 1rem;
+            box-shadow: var(--shadow-sm);
         }
+
+        .toggle-btn:hover {
+            background: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .message {
+            display: flex;
+            gap: 1rem;
+            max-width: 90%;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message-content {
+            padding: 1.25rem;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            line-height: 1.7;
+            position: relative;
+        }
+
+        .avatar {
+            width: var(--avatar-size);
+            height: var(--avatar-size);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-weight: bold;
+            margin-top: 0.5rem;
+        }
+
+        .user-message {
+            align-self: flex-end;
+            margin-left: auto;
+        }
+
+        .user-message .message-content {
+            background: var(--user-msg-bg);
+            border-bottom-right-radius: var(--radius-sm);
+        }
+
+        .user-message .avatar {
+            background: linear-gradient(135deg, var(--primary-color), var(--gradient-start));
+            color: white;
+        }
+
+        .assistant-message {
+            align-self: flex-start;
+        }
+
+        .assistant-message .message-content {
+            background: var(--assistant-msg-bg);
+            border-bottom-left-radius: var(--radius-sm);
+        }
+
+        .assistant-message .avatar {
+            background: linear-gradient(135deg, #64748b, #94a3b8);
+            color: white;
+        }
+
+        pre {
+            position: relative;
+            background-color: rgba(0, 0, 0, 0.05);
+            border-radius: var(--radius-sm);
+            padding: 1.25rem;
+            padding-top: 2.5rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+            font-size: 0.95rem;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            background: rgba(99, 102, 241, 0.8);
+            border: none;
+            color: white;
+            border-radius: var(--radius-sm);
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .copy-btn:hover {
+            background: var(--primary-color);
+        }
+
+        code {
+            font-family: 'Fira Code', 'Courier New', monospace;
+        }
+
+        .typing-indicator {
+            padding: 0 2rem 1.5rem;
+            color: var(--text-light);
+            font-size: 0.95rem;
+            flex-shrink: 0;
+            display: none;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .typing-indicator.visible {
+            display: flex;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 0.3rem;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            animation: bounce 1.5s infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        .message-input {
+            display: flex;
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.8);
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+            flex-shrink: 0;
+        }
+
+        #user-input {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            border-radius: var(--radius-lg);
+            font-family: inherit;
+            font-size: 1rem;
+            resize: none;
+            min-height: 60px;
+            max-height: 150px;
+            transition: all 0.2s;
+            background: white;
+            box-shadow: var(--shadow-sm);
+        }
+
+        #user-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+        }
+
+        #send-button {
+            margin-left: 1rem;
+            padding: 0 1.75rem;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: var(--radius-lg);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        #send-button:hover {
+            background: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        #send-button:disabled {
+            background: var(--text-light);
+            cursor: not-allowed;
+            transform: none;
+        }
+
         footer {
-          display: none;
+            padding: 1.5rem;
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--text-light);
+            margin-top: 1.5rem;
         }
-      }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.3);
+            z-index: 10;
+            display: none;
+            opacity: 0;
+            transition: opacity var(--transition-speed) ease;
+            backdrop-filter: blur(2px);
+        }
+
+        .overlay.active {
+            display: block;
+            opacity: 1;
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            body {
+                padding: 0;
+            }
+            header {
+                padding: 1.2rem;
+                margin-bottom: 0;
+            }
+            h1 {
+                font-size: 1.8rem;
+            }
+            .main-container {
+                border-radius: 0;
+                height: 100vh;
+                min-height: auto;
+            }
+            .sidebar {
+                width: 85%;
+                z-index: 30;
+                box-shadow: 5px 0 20px rgba(0, 0, 0, 0.15);
+            }
+            .toggle-btn {
+                position: fixed;
+                top: 1rem;
+                left: 1rem;
+                z-index: 40;
+            }
+            .chat-header {
+                padding: 1rem 1.5rem;
+            }
+            .chat-messages {
+                padding: 1.5rem;
+            }
+            .message {
+                max-width: 95%;
+            }
+            .message-input {
+                padding: 1rem;
+            }
+            footer {
+                display: none;
+            }
+        }
     </style>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" rel="stylesheet">
-  </head>
-  <body>
+</head>
+<body>
     <header>
-      <h1>LLM Chat</h1>
-      <p>基于Cloudflare Workers的AI</p>
+        <h1>LLM Chat</h1>
+        <p>基于Cloudflare Workers AI的智能对话助手，提供快速、安全的AI聊天体验</p>
     </header>
 
     <div class="main-container">
-      <button id="toggle-btn" class="toggle-btn">☰</button>
-      <div id="sidebar" class="sidebar collapsed">
-        <div class="sidebar-content">
-          <div class="sidebar-header">
-            <h3>Chat History</h3>
-          </div>
-          <div id="history-list" class="history-list"></div>
+        <div id="sidebar" class="sidebar collapsed">
+            <div class="sidebar-content">
+                <div class="sidebar-header">
+                    <h3>聊天历史</h3>
+                    <button class="new-chat-btn">
+                        <i class="fas fa-plus"></i> 新对话
+                    </button>
+                </div>
+                <div id="history-list" class="history-list">
+                    <div class="history-item active">
+                        <div>
+                            <i class="fas fa-comment icon"></i>
+                            如何学习JavaScript？
+                        </div>
+                        <button class="delete-btn">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <div class="history-item">
+                        <div>
+                            <i class="fas fa-comment icon"></i>
+                            Cloudflare Workers是什么？
+                        </div>
+                        <button class="delete-btn">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <div class="history-item">
+                        <div>
+                            <i class="fas fa-comment icon"></i>
+                            解释AI的工作原理
+                        </div>
+                        <button class="delete-btn">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <div class="history-item">
+                        <div>
+                            <i class="fas fa-comment icon"></i>
+                            如何优化网站性能？
+                        </div>
+                        <button class="delete-btn">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <div class="history-item">
+                        <div>
+                            <i class="fas fa-comment icon"></i>
+                            CSS网格布局示例
+                        </div>
+                        <button class="delete-btn">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-      <div class="chat-container">
-        <div id="chat-messages" class="chat-messages"></div>
-        <div id="typing-indicator" class="typing-indicator">
-          Assistant is typing...
+        
+        <button id="toggle-btn" class="toggle-btn">
+            <i class="fas fa-bars"></i>
+        </button>
+        
+        <div class="chat-container">
+            <div class="chat-header">
+                <div class="chat-title">当前对话</div>
+            </div>
+            
+            <div id="chat-messages" class="chat-messages">
+                <div class="message assistant-message">
+                    <div class="avatar">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="message-content">
+                        您好！我是您的AI助手。请问有什么可以帮您的吗？
+                    </div>
+                </div>
+                
+                <div class="message user-message">
+                    <div class="message-content">
+                        你好！请解释一下Cloudflare Workers的工作原理。
+                    </div>
+                    <div class="avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                </div>
+                
+                <div class="message assistant-message">
+                    <div class="avatar">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="message-content">
+                        Cloudflare Workers 是一个无服务器计算平台，允许开发者在 Cloudflare 的全球边缘网络上运行 JavaScript 代码。以下是其关键特点：
+                        
+                        <p><strong>工作原理：</strong></p>
+                        <ul>
+                            <li>代码部署在Cloudflare的200多个数据中心</li>
+                            <li>请求在离用户最近的边缘节点处理</li>
+                            <li>基于Service Workers API</li>
+                            <li>使用V8 JavaScript引擎</li>
+                        </ul>
+                        
+                        <p><strong>示例代码：</strong></p>
+                        <pre><code>addEventListener('fetch', event => {
+  event.respondWith(handleRequest(event.request))
+})
+
+async function handleRequest(request) {
+  return new Response('Hello from Cloudflare Workers!', {
+    headers: { 'content-type': 'text/plain' }
+  })
+}</code></pre>
+                        <button class="copy-btn">
+                            <i class="fas fa-copy"></i> 复制代码
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="typing-indicator" class="typing-indicator">
+                <div class="typing-dots">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+                <span>Assistant正在输入...</span>
+            </div>
+            
+            <div class="message-input">
+                <textarea
+                    id="user-input"
+                    placeholder="输入消息..."
+                    rows="1"
+                ></textarea>
+                <button id="send-button">
+                    <i class="fas fa-paper-plane"></i> 发送
+                </button>
+            </div>
         </div>
-        <div class="message-input">
-          <textarea
-            id="user-input"
-            placeholder="Type your message..."
-            rows="1"
-          ></textarea>
-          <button id="send-button">Send</button>
-        </div>
-      </div>
-      <div id="overlay" class="overlay"></div>
+        
+        <div id="overlay" class="overlay"></div>
     </div>
 
     <footer>
-      <p>&copy; 2025 云猫. All rights reserved.</p>
+        <p>&copy; 2025 云猫智能科技 | 基于Cloudflare Workers AI构建</p>
     </footer>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-    <script src="chat.js"></script>
-  </body>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggleBtn = document.getElementById('toggle-btn');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            const userInput = document.getElementById('user-input');
+            const sendButton = document.getElementById('send-button');
+            const chatMessages = document.getElementById('chat-messages');
+            const typingIndicator = document.getElementById('typing-indicator');
+            const historyItems = document.querySelectorAll('.history-item');
+            
+            // 侧边栏切换功能
+            toggleBtn.addEventListener('click', function() {
+                sidebar.classList.toggle('collapsed');
+                overlay.classList.toggle('active');
+            });
+            
+            // 点击遮罩层关闭侧边栏
+            overlay.addEventListener('click', function() {
+                sidebar.classList.add('collapsed');
+                overlay.classList.remove('active');
+            });
+            
+            // 聊天历史项点击事件
+            historyItems.forEach(item => {
+                item.addEventListener('click', function(e) {
+                    if (e.target.classList.contains('delete-btn')) {
+                        e.stopPropagation();
+                        this.remove();
+                    } else {
+                        historyItems.forEach(i => i.classList.remove('active'));
+                        this.classList.add('active');
+                        sidebar.classList.add('collapsed');
+                        overlay.classList.remove('active');
+                    }
+                });
+            });
+            
+            // 自动调整文本区域高度
+            userInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+            });
+            
+            // 发送消息功能
+            sendButton.addEventListener('click', sendMessage);
+            userInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+            
+            function sendMessage() {
+                const message = userInput.value.trim();
+                if (message) {
+                    // 添加用户消息
+                    addMessage(message, 'user');
+                    userInput.value = '';
+                    userInput.style.height = 'auto';
+                    
+                    // 显示"正在输入"指示器
+                    typingIndicator.classList.add('visible');
+                    
+                    // 模拟AI回复
+                    setTimeout(() => {
+                        typingIndicator.classList.remove('visible');
+                        addMessage("Cloudflare Workers 是一个强大的边缘计算平台，它允许开发者在全球200多个地点运行代码，从而显著减少延迟。如果您有具体的技术问题，我很乐意进一步解答！", 'assistant');
+                    }, 2000);
+                }
+            }
+            
+            function addMessage(content, sender) {
+                const messageDiv = document.createElement('div');
+                messageDiv.classList.add('message', `${sender}-message`);
+                
+                const avatarDiv = document.createElement('div');
+                avatarDiv.classList.add('avatar');
+                avatarDiv.innerHTML = sender === 'user' ? 
+                    '<i class="fas fa-user"></i>' : 
+                    '<i class="fas fa-robot"></i>';
+                
+                const contentDiv = document.createElement('div');
+                contentDiv.classList.add('message-content');
+                contentDiv.textContent = content;
+                
+                if (sender === 'user') {
+                    messageDiv.appendChild(contentDiv);
+                    messageDiv.appendChild(avatarDiv);
+                } else {
+                    messageDiv.appendChild(avatarDiv);
+                    messageDiv.appendChild(contentDiv);
+                }
+                
+                chatMessages.appendChild(messageDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+            
+            // 复制按钮功能
+            document.querySelectorAll('.copy-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const codeBlock = this.parentElement.querySelector('code');
+                    const textArea = document.createElement('textarea');
+                    textArea.value = codeBlock.textContent;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    
+                    // 显示复制成功反馈
+                    const originalText = this.innerHTML;
+                    this.innerHTML = '<i class="fas fa-check"></i> 已复制';
+                    setTimeout(() => {
+                        this.innerHTML = originalText;
+                    }, 2000);
+                });
+            });
+        });
+    </script>
+</body>
 </html>
