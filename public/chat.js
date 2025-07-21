@@ -186,8 +186,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.innerWidth <= 768) {
       if (!isCollapsed) {
         overlay.classList.add('active');
-        overlay.style.zIndex = '9'; // 确保比 sidebar 背景低
-        sidebar.style.zIndex = '10'; // 确保 sidebar 内容可点击
       } else {
         overlay.classList.remove('active');
       }
