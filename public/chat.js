@@ -398,7 +398,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (final) {
       messageEl.querySelectorAll('.copy-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-          const code = btn.closest('pre').querySelector('code').textContent;
+          const code = btn.closest('pre').querySelector('code').innerText;
           navigator.clipboard.writeText(code).then(() => {
             btn.textContent = 'Copied!';
             setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
