@@ -102,14 +102,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const assistantMessageEl = addMessageToChat("assistant", "", false);
             scrollToBottom();
 
-            const response = await fetch("/api/chat", {
-                method: "POST",
-                headers: { 
-                    "Content-Type": "application/json",
-                    "Accept": "text/event-stream"  // 明确接受SSE流
-                },
-                body: JSON.stringify({ messages: chatHistory }),
-            });
+        // 获取选择的模型
+        const modelSelect = document.getElementById("model-select");
+        const selectedModel = modelSelect.value;
+
+        const response = await fetch("/api/chat", {
+            method: "POST",
+            headers: { 
+                "Content-Type": "application/json",
+                "Accept": "text/event-stream"  // 明确接受SSE流
+            },
+            body: JSON.stringify({ 
+                messages: chatHistory,
+                model: selectedModel  // 添加模型参数
+            }),
+        });
 
             if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
 

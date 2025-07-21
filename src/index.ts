@@ -9,10 +9,6 @@
  */
 import { Env, ChatMessage } from "./types";
 
-// Model ID for Workers AI model
-// https://developers.cloudflare.com/workers-ai/models/
-const MODEL_ID = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
-
 // Default system prompt
 const SYSTEM_PROMPT =
   "You are a helpful, friendly assistant. Provide concise and accurate responses.";
@@ -58,16 +54,34 @@ async function handleChatRequest(
 ): Promise<Response> {
   try {
     // Parse JSON request body
-    const { messages = [] } = (await request.json()) as {
+    const { messages = [], model } = (await request.json()) as {
       messages: ChatMessage[];
+      model?: string;
     };
+
+    // List of allowed models
+    const allowedModels = [
+      "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b",
+      "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "@cf/meta/llama-4-scout-17b-16e-instruct",
+      "@cf/qwen/qwq-32b",
+      "@cf/deepseek-ai/deepseek-math-7b-instruct"
+    ];
+    
+    // Validate model selection or use default
+    const modelId = allowedModels.includes(model || "") 
+      ? model 
+      : "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
 
     // Add system prompt if not present
     if (!messages.some((msg) => msg.role === "system")) {
       messages.unshift({ role: "system", content: SYSTEM_PROMPT });
     }
 
-    const stream = await env.AI.run(MODEL_ID, {
+    // 使用类型断言确保模型ID被正确识别
+    // 注意：Cloudflare Workers AI可能要求模型ID是已知的键值
+    // 使用any绕过类型检查
+    const stream = await env.AI.run(modelId as any, {
       messages,
       stream: true,
     });
