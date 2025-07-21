@@ -114,40 +114,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done) {
+          // The stream has ended. No more data.
+          break;
+        }
 
+        // Add the new chunk to our buffer
         buffer += decoder.decode(value, { stream: true });
         
-        // 尝试按换行符分割JSON对象
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || ""; // 保存未完成的行
-
-        for (const line of lines) {
-          if (line.trim() === '') continue;
+        // Process all complete messages in the buffer
+        let endOfMessage;
+        while ((endOfMessage = buffer.indexOf('\n\n')) >= 0) {
+          const message = buffer.slice(0, endOfMessage);
+          buffer = buffer.slice(endOfMessage + 2);
           
-          try {
-            const data = JSON.parse(line);
-            if (data.response) {
-              responseText += data.response;
-              renderMessageContent(assistantMessageEl, responseText);
-              scrollToBottom();
+          if (message.startsWith('data: ')) {
+            try {
+              const jsonString = message.substring(6);
+              if (jsonString) {
+                const data = JSON.parse(jsonString);
+                if (data.response) {
+                  responseText += data.response;
+                  renderMessageContent(assistantMessageEl, responseText);
+                  scrollToBottom();
+                }
+              }
+            } catch (e) {
+              console.error('Error parsing SSE event:', e, message);
             }
-          } catch (e) {
-            console.error('Error parsing JSON chunk:', e, line);
           }
-        }
-      }
-      
-      // 处理剩余的buffer内容
-      if (buffer.trim() !== '') {
-        try {
-          const data = JSON.parse(buffer);
-          if (data.response) {
-            responseText += data.response;
-            renderMessageContent(assistantMessageEl, responseText);
-          }
-        } catch (e) {
-          console.error('Error parsing final JSON chunk:', e, buffer);
         }
       }
       
