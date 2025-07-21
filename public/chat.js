@@ -5,6 +5,9 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Initialize syntax highlighting for all code blocks
+  hljs.highlightAll();
+  
   // DOM elements
   const chatMessages = document.getElementById("chat-messages");
   const userInput = document.getElementById("user-input");
