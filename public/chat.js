@@ -1,26 +1,26 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize syntax highlighting for all code blocks that might exist statically
+    // 初始化语法高亮
     // hljs.highlightAll();
 
-    // DOM elements from the new template
+    // DOM元素
     const chatMessages = document.getElementById("chat-messages");
     const userInput = document.getElementById("user-input");
     const sendButton = document.getElementById("send-button");
     const typingIndicator = document.getElementById("typing-indicator");
     const sidebar = document.getElementById("sidebar");
-    const historyBtn = document.getElementById("history-btn"); // Replaces toggle-btn
+    const historyBtn = document.getElementById("history-btn");
     const historyList = document.getElementById("history-list");
     const overlay = document.getElementById("overlay");
     const newChatBtn = document.querySelector(".new-chat-btn");
 
-    // Chat state
+    // 聊天状态
     let chatHistory = [];
     let isProcessing = false;
     let currentChatId = null;
     let chats = {};
 
     /**
-     * Initializes the application
+     * 初始化应用
      */
     function init() {
         loadChats();
@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 loadChat(lastChatId);
             } else {
                 const lastChat = chatIds.sort((a, b) => chats[b].lastUpdated - chats[a].lastUpdated);
-                loadChat(lastChat);
+                loadChat(lastChat[0]);
             }
         }
         updateHistoryList();
@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * Sets up all event listeners
+     * 设置事件监听器
      */
     function setupEventListeners() {
         userInput.addEventListener("input", autoResizeTextarea);
@@ -51,14 +51,14 @@ document.addEventListener('DOMContentLoaded', () => {
         overlay.addEventListener("click", closeSidebar);
         newChatBtn.addEventListener("click", startNewChat);
         window.addEventListener("resize", () => {
-             if (window.innerWidth > 768) {
+            if (window.innerWidth > 768) {
                 overlay.classList.remove('active');
             }
         });
     }
 
     /**
-     * Auto-resizes the textarea as the user types
+     * 自动调整文本区域高度
      */
     function autoResizeTextarea() {
         this.style.height = "auto";
@@ -66,8 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * Handles keydown events on the textarea (e.g., Enter to send)
-     * @param {KeyboardEvent} e - The keydown event
+     * 处理键盘事件（如Enter发送）
      */
     function handleKeydown(e) {
         if (e.key === "Enter" && !e.shiftKey) {
@@ -77,7 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * Sends a message to the chat API and processes the response
+     * 发送消息到聊天API并处理响应
      */
     async function sendMessage() {
         const message = userInput.value.trim();
@@ -91,49 +90,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
         chatHistory.push({ role: "user", content: message });
         saveChat();
-        updateHistoryList(); // Update title immediately
+        updateHistoryList();
 
         try {
             const assistantMessageEl = addMessageToChat("assistant", "", false);
             scrollToBottom();
 
-            const response = await fetch("/api/chat", {
+            // 修复URL路径
+            const response = await fetch("/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ messages: chatHistory }),
             });
 
-            if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+            if (!response.ok) throw new Error(`API错误: ${response.statusText}`);
 
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let responseText = "";
-            let buffer = "";
 
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
 
-                buffer += decoder.decode(value, { stream: true });
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split('\n\n');
                 
-                let endOfMessage;
-                while ((endOfMessage = buffer.indexOf('\n\n')) >= 0) {
-                    const eventString = buffer.slice(0, endOfMessage);
-                    buffer = buffer.slice(endOfMessage + 2);
-                    
-                    if (eventString.startsWith('data: ')) {
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
                         try {
-                            const jsonString = eventString.substring(6);
-                            if (jsonString) {
-                                const data = JSON.parse(jsonString);
-                                if (data.response) {
-                                    responseText += data.response;
-                                    renderMessageContent(assistantMessageEl, responseText, false);
-                                    scrollToBottom();
-                                }
+                            const data = JSON.parse(line.substring(6));
+                            if (data.response) {
+                                responseText += data.response;
+                                renderMessageContent(assistantMessageEl, responseText, false);
+                                scrollToBottom();
                             }
                         } catch (e) {
-                            console.error('Error parsing SSE event:', e, eventString);
+                            console.error('解析SSE事件错误:', e, line);
                         }
                     }
                 }
@@ -145,9 +138,9 @@ document.addEventListener('DOMContentLoaded', () => {
             updateHistoryList();
 
         } catch (error) {
-            console.error("Error:", error);
+            console.error("错误:", error);
             const errorEl = addMessageToChat("assistant", "", false);
-            renderMessageContent(errorEl, "Sorry, an error occurred. Please try again.", true);
+            renderMessageContent(errorEl, "抱歉，发生错误，请重试。", true);
         } finally {
             setProcessingState(false);
             typingIndicator.classList.remove("visible");
@@ -155,8 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * Toggles the processing state of the UI
-     * @param {boolean} processing - Whether the app is processing a message
+     * 设置处理状态
      */
     function setProcessingState(processing) {
         isProcessing = processing;
@@ -171,27 +163,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * Toggles the sidebar visibility
+     * 切换侧边栏可见性 - 修复类名
      */
     function toggleSidebar() {
-        const isCollapsed = sidebar.classList.toggle('collapsed');
-        overlay.classList.toggle('active', !isCollapsed);
+        sidebar.classList.toggle('active');
+        overlay.classList.toggle('active', sidebar.classList.contains('active'));
     }
 
     /**
-     * Closes the sidebar
+     * 关闭侧边栏
      */
     function closeSidebar() {
-        sidebar.classList.add('collapsed');
+        sidebar.classList.remove('active');
         overlay.classList.remove('active');
     }
 
     /**
-     * Saves the current chat to localStorage
+     * 保存当前聊天到localStorage
      */
     function saveChat() {
         if (!currentChatId) return;
-        // Generate title from the first user message, or use a default.
         const userMessage = chatHistory.find(m => m.role === 'user');
         const chatTitle = userMessage ? userMessage.content.substring(0, 40) : "新对话";
 
@@ -206,15 +197,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * Loads all chats from localStorage
+     * 从localStorage加载所有聊天
      */
     function loadChats() {
         chats = JSON.parse(localStorage.getItem('chats') || '{}');
     }
 
     /**
-     * Loads a specific chat into the main view
-     * @param {string} chatId - The ID of the chat to load
+     * 加载特定聊天
      */
     function loadChat(chatId) {
         if (!chats[chatId]) return;
@@ -233,7 +223,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * Starts a new chat session
+     * 开始新聊天 - 修复初始化消息
      */
     function startNewChat() {
         closeSidebar();
@@ -245,15 +235,15 @@ document.addEventListener('DOMContentLoaded', () => {
             },
         ];
         chatMessages.innerHTML = '';
-        const initialMessage = chatHistory;
+        // 正确添加第一条消息
+        const initialMessage = chatHistory[0];
         addMessageToChat(initialMessage.role, initialMessage.content, true);
         saveChat();
         updateHistoryList();
     }
 
     /**
-     * Deletes a chat from history
-     * @param {string} chatId - The ID of the chat to delete
+     * 删除聊天记录
      */
     function deleteChat(chatId) {
         delete chats[chatId];
@@ -262,7 +252,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentChatId === chatId) {
             const sortedChats = Object.values(chats).sort((a, b) => b.lastUpdated - a.lastUpdated);
             if (sortedChats.length > 0) {
-                loadChat(sortedChats.id);
+                loadChat(sortedChats[0].id);
             } else {
                 startNewChat();
             }
@@ -271,7 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * Updates the history list in the sidebar
+     * 更新侧边栏历史列表
      */
     function updateHistoryList() {
         historyList.innerHTML = '';
@@ -285,7 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
             item.innerHTML = `
                 <div>
                     <i class="fas fa-comment icon"></i>
-                    ${chat.title || 'New Chat'}
+                    ${chat.title || '新聊天'}
                 </div>
                 <button class="delete-btn">
                     <i class="fas fa-trash"></i>
@@ -303,11 +293,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * Adds a message to the chat display
-     * @param {string} role - 'user' or 'assistant'
-     * @param {string} content - The message content
-     * @param {boolean} isFinal - True if the content is complete
-     * @returns {HTMLElement} - The created message element
+     * 添加消息到聊天显示
      */
     function addMessageToChat(role, content, isFinal = true) {
         const messageContainer = document.createElement('div');
@@ -338,13 +324,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * Renders the content of a message, handling markdown and code highlighting
-     * @param {HTMLElement} contentEl - The element to render content into
-     * @param {string} content - The raw message content
-     * @param {boolean} final - Whether this is the final render for the message
+     * 渲染消息内容
      */
     function renderMessageContent(contentEl, content, final = false) {
-        // Use a library for robust Markdown conversion
+        // 使用Markdown转换
         const rawHtml = marked.parse(content, {
             highlight: function(code, lang) {
                 const language = hljs.getLanguage(lang) ? lang : 'plaintext';
@@ -389,12 +372,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * Scrolls the chat messages to the bottom
+     * 滚动到底部
      */
     function scrollToBottom() {
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
-    // Start the application
+    // 启动应用
     init();
 });
