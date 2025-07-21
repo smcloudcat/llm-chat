@@ -14,10 +14,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const sendButton = document.getElementById("send-button");
   const typingIndicator = document.getElementById("typing-indicator");
   const sidebar = document.getElementById("sidebar");
-  const toggleBtn = document.getElementById("toggle-btn");
+  const toggleBtn = document.getElementById("history-btn"); // 修复ID
   const historyList = document.getElementById("history-list");
   const overlay = document.getElementById("overlay");
-  const chatContainer = document.querySelector('.chat-container');
+  const newChatBtn = document.querySelector('.new-chat-btn'); // 添加新聊天按钮引用
 
   // Chat state
   let chatHistory = [
@@ -57,6 +57,9 @@ document.addEventListener('DOMContentLoaded', () => {
     toggleBtn.addEventListener("click", toggleSidebar);
     overlay.addEventListener("click", closeSidebar);
     window.addEventListener("resize", adjustUIForScreenSize);
+    
+    // 添加新聊天按钮事件监听
+    newChatBtn.addEventListener('click', startNewChat);
   }
 
   /**
