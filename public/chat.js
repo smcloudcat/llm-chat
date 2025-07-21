@@ -32,10 +32,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (lastChatId && chats[lastChatId]) {
                 loadChat(lastChatId);
             } else {
-                const sortedChatIds = chatIds.sort((a, b) => chats[b].lastUpdated - chats[a].lastUpdated);
-                if (sortedChatIds.length > 0) {
-                    loadChat(sortedChatIds);
-                }
+                const lastChat = chatIds.sort((a, b) => chats[b].lastUpdated - chats[a].lastUpdated);
+                loadChat(lastChat);
             }
         }
         updateHistoryList();
@@ -177,10 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     function toggleSidebar() {
         const isCollapsed = sidebar.classList.toggle('collapsed');
-        const isMobile = window.innerWidth <= 768;
-        if (isMobile) {
-            overlay.classList.toggle('active', !isCollapsed);
-        }
+        overlay.classList.toggle('active', !isCollapsed);
     }
 
     /**
@@ -250,10 +245,8 @@ document.addEventListener('DOMContentLoaded', () => {
             },
         ];
         chatMessages.innerHTML = '';
-        if (chatHistory.length > 0) {
-            const initialMessage = chatHistory;
-            addMessageToChat(initialMessage.role, initialMessage.content, true);
-        }
+        const initialMessage = chatHistory;
+        addMessageToChat(initialMessage.role, initialMessage.content, true);
         saveChat();
         updateHistoryList();
     }
