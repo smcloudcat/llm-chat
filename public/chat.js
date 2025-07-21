@@ -42,7 +42,6 @@ document.addEventListener('DOMContentLoaded', () => {
     updateHistoryList();
     setupEventListeners();
     adjustUIForScreenSize();
-    addMessageToChat(chatHistory[0].role, chatHistory[0].content);
   }
 
   /**
@@ -364,8 +363,11 @@ document.addEventListener('DOMContentLoaded', () => {
    * @param {boolean} final - Whether this is the final render for the message
    */
   function renderMessageContent(messageEl, content, final = false) {
+    // 将换行符转换为HTML换行标签
+    let formattedContent = content.replace(/\n/g, '<br>');
+    
     // Basic markdown for bold and italics
-    let formattedContent = content
+    formattedContent = formattedContent
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/g, '<em>$1</em>');
 

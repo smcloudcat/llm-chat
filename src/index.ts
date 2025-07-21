@@ -67,25 +67,72 @@ async function handleChatRequest(
       messages.unshift({ role: "system", content: SYSTEM_PROMPT });
     }
 
-    const response = await env.AI.run(
-      MODEL_ID,
-      {
-        messages,
-        max_tokens: 1024,
-      },
-      {
-        returnRawResponse: true,
-        // Uncomment to use AI Gateway
-        // gateway: {
-        //   id: "YOUR_GATEWAY_ID", // Replace with your AI Gateway ID
-        //   skipCache: false,      // Set to true to bypass cache
-        //   cacheTtl: 3600,        // Cache time-to-live in seconds
-        // },
-      },
-    );
+    const stream = new ReadableStream({
+      async start(controller) {
+        const response = await env.AI.run(
+          MODEL_ID,
+          {
+            messages,
+            max_tokens: 1024,
+          },
+          {
+            returnRawResponse: true,
+          },
+        );
 
-    // Return streaming response
-    return response;
+        if (!response.body) {
+          throw new Error("Response body is null.");
+        }
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        try {
+          let buffer = "";
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || ""; // 保存未完成的 JSON
+
+            for (const line of lines) {
+              if (line.trim() === "") continue;
+              try {
+                const data = JSON.parse(line);
+                if (data.response) {
+                  controller.enqueue(`data: ${JSON.stringify(data)}\n\n`);
+                }
+              } catch (err) {
+                console.error("Failed to parse chunk", err, line);
+              }
+            }
+          }
+
+          // Handle remaining buffer
+          if (buffer.trim() !== "") {
+            try {
+              const data = JSON.parse(buffer);
+              if (data.response) {
+                controller.enqueue(`data: ${JSON.stringify(data)}\n\n`);
+              }
+            } catch (err) {
+              console.error("Failed to parse final chunk", err, buffer);
+            }
+          }
+        } finally {
+          controller.close();
+        }
+      },
+    });
+
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
+    });
   } catch (error) {
     console.error("Error processing chat request:", error);
     return new Response(
