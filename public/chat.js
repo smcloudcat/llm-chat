@@ -24,11 +24,17 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     function init() {
         loadChats();
-        if (Object.keys(chats).length === 0) {
+        const chatIds = Object.keys(chats);
+        if (chatIds.length === 0) {
             startNewChat();
         } else {
-            const lastChatId = localStorage.getItem('lastChatId') || Object.keys(chats).sort((a, b) => chats[b].lastUpdated - chats[a].lastUpdated);
-            loadChat(lastChatId);
+            const lastChatId = localStorage.getItem('lastChatId');
+            if (lastChatId && chats[lastChatId]) {
+                loadChat(lastChatId);
+            } else {
+                const lastChat = chatIds.sort((a, b) => chats[b].lastUpdated - chats[a].lastUpdated);
+                loadChat(lastChat);
+            }
         }
         updateHistoryList();
         setupEventListeners();
@@ -156,7 +162,11 @@ document.addEventListener('DOMContentLoaded', () => {
         isProcessing = processing;
         userInput.disabled = processing;
         sendButton.disabled = processing;
-        sendButton.innerHTML = processing ? '<i class="fas fa-spinner fa-spin"></i>' : '<i class="fas fa-paper-plane"></i> 发送';
+        if (processing) {
+            sendButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        } else {
+            sendButton.innerHTML = '<i class="fas fa-paper-plane"></i> 发送';
+        }
         if (!processing) userInput.focus();
     }
 
@@ -181,7 +191,10 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     function saveChat() {
         if (!currentChatId) return;
-        const chatTitle = chatHistory.length > 1 ? chatHistory.content.substring(0, 40) : "New Chat";
+        // Generate title from the first user message, or use a default.
+        const userMessage = chatHistory.find(m => m.role === 'user');
+        const chatTitle = userMessage ? userMessage.content.substring(0, 40) : "新对话";
+
         chats[currentChatId] = {
             id: currentChatId,
             title: chatTitle,
@@ -232,7 +245,8 @@ document.addEventListener('DOMContentLoaded', () => {
             },
         ];
         chatMessages.innerHTML = '';
-        addMessageToChat(chatHistory.role, chatHistory.content, true);
+        const initialMessage = chatHistory;
+        addMessageToChat(initialMessage.role, initialMessage.content, true);
         saveChat();
         updateHistoryList();
     }
@@ -299,15 +313,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const messageContainer = document.createElement('div');
         messageContainer.classList.add('message', `${role}-message`);
 
-        const avatarDiv = `<div class="avatar"><i class="fas ${role === 'user' ? 'fa-user' : 'fa-robot'}"></i></div>`;
+        const avatarDiv = document.createElement('div');
+        avatarDiv.classList.add('avatar');
+        avatarDiv.innerHTML = `<i class="fas ${role === 'user' ? 'fa-user' : 'fa-robot'}"></i>`;
+
         const contentDiv = document.createElement('div');
         contentDiv.classList.add('message-content');
 
         if (role === 'user') {
             messageContainer.appendChild(contentDiv);
-            messageContainer.innerHTML += avatarDiv;
+            messageContainer.appendChild(avatarDiv);
         } else {
-            messageContainer.innerHTML = avatarDiv;
+            messageContainer.appendChild(avatarDiv);
             messageContainer.appendChild(contentDiv);
         }
         
