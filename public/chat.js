@@ -366,24 +366,33 @@ document.addEventListener('DOMContentLoaded', () => {
    * @param {boolean} final - Whether this is the final render for the message
    */
   function renderMessageContent(messageEl, content, final = false) {
-    // Basic markdown for bold and italics
-    let formattedContent = content
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>');
-
-    // Handle code blocks before handling line breaks
+    // Handle code blocks before processing other Markdown
     const codeBlockRegex = /```(\w*)\n([\s\S]*?)```/g;
-    formattedContent = formattedContent.replace(codeBlockRegex, (match, lang, code) => {
+    let formattedContent = content.replace(codeBlockRegex, (match, lang, code) => {
       const language = lang || 'plaintext';
       const highlightedCode = hljs.highlight(code, { language, ignoreIllegals: true }).value;
       return `<pre><div class="pre-header"><span class="lang">${language}</span><button class="copy-btn">Copy</button></div><code class="language-${language}">${highlightedCode}</code></pre>`;
     });
 
+    // Handle Markdown headings
+    formattedContent = formattedContent
+      .replace(/^### (.*)$/gm, '<h3>$1</h3>')
+      .replace(/^## (.*)$/gm, '<h2>$1</h2>')
+      .replace(/^# (.*)$/gm, '<h1>$1</h1>');
+
+    // Handle unordered lists
+    formattedContent = formattedContent
+      .replace(/^\* (.*)$/gm, '<li>$1</li>')
+      .replace(/(<li>.*<\/li>(\n)?)+/gm, '<ul>$&</ul>');
+
     // Convert line breaks to HTML <br> tags
     formattedContent = formattedContent.replace(/\n/g, '<br>');
 
-    // Handle inline code
-    formattedContent = formattedContent.replace(/`([^`]+)`/g, '<code>$1</code>');
+    // Handle inline Markdown (bold, italics, and inline code)
+    formattedContent = formattedContent
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/`([^`]+)`/g, '<code>$1</code>');
 
     messageEl.innerHTML = formattedContent;
 
