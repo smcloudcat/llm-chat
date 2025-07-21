@@ -366,22 +366,22 @@ document.addEventListener('DOMContentLoaded', () => {
    * @param {boolean} final - Whether this is the final render for the message
    */
   function renderMessageContent(messageEl, content, final = false) {
-    // 将换行符转换为HTML换行标签
-    let formattedContent = content.replace(/\n/g, '<br>');
-    
     // Basic markdown for bold and italics
-    formattedContent = formattedContent
+    let formattedContent = content
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/g, '<em>$1</em>');
 
-    // Handle code blocks
+    // Handle code blocks before handling line breaks
     const codeBlockRegex = /```(\w*)\n([\s\S]*?)```/g;
     formattedContent = formattedContent.replace(codeBlockRegex, (match, lang, code) => {
       const language = lang || 'plaintext';
       const highlightedCode = hljs.highlight(code, { language, ignoreIllegals: true }).value;
       return `<pre><div class="pre-header"><span class="lang">${language}</span><button class="copy-btn">Copy</button></div><code class="language-${language}">${highlightedCode}</code></pre>`;
     });
-    
+
+    // Convert line breaks to HTML <br> tags
+    formattedContent = formattedContent.replace(/\n/g, '<br>');
+
     // Handle inline code
     formattedContent = formattedContent.replace(/`([^`]+)`/g, '<code>$1</code>');
 
