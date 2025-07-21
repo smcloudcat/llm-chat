@@ -184,7 +184,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const isCollapsed = sidebar.classList.contains('collapsed');
 
     if (window.innerWidth <= 768) {
-      overlay.classList.toggle('active', !isCollapsed);
+      if (!isCollapsed) {
+        overlay.classList.add('active');
+        overlay.style.zIndex = '9'; // 确保比 sidebar 背景低
+        sidebar.style.zIndex = '10'; // 确保 sidebar 内容可点击
+      } else {
+        overlay.classList.remove('active');
+      }
     }
     
     // The chat container margin is now handled by CSS, so no JS update is needed here.
